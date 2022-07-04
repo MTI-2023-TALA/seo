@@ -5,6 +5,17 @@ from pptx.enum.text import MSO_AUTO_SIZE
 from bs4 import BeautifulSoup as bs
 import requests
 import re
+import sys
+import validators
+
+# check that only file and url are passed
+if len(sys.argv) != 2:
+  sys.exit("Please only provide an URL to analyze as argument.")
+
+url = sys.argv[1]
+valid = validators.url(url)
+if not valid:
+  sys.exit("Please provide a valid URL to analyze.")
 
 class Heading:
   def __init__(self, name, text):
@@ -34,7 +45,7 @@ class Heading:
   def __str__(self):
     return self.name + ": " + self.text
 
-url="http://www.prisma.io/docs/reference/api-reference/command-reference"
+# url="http://www.prisma.io/docs/reference/api-reference/command-reference"
 response = requests.get(url)
 html = response.content
 soup = bs(html, "lxml")
