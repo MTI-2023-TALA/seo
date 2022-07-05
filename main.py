@@ -37,6 +37,11 @@ class Heading:
   def __str__(self):
     return self.name + ": " + self.text
 
+@app.route('/', methods=['GET'])
+def index():
+  return send_file('static/index.html')
+
+
 @app.route('/', methods=['POST'])
 def hello_world():
   url = request.json['url']
