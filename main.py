@@ -271,9 +271,9 @@ def hello_world():
     p.font.bold = True
     p = tf.add_paragraph() 
     p.text = "La structure affichée représente l'arborescence de votre page, il est nécessaire qu'à la lecture de celle-ci " + \
-              "nous puissons remarquer que la page a du sens et est bien architecturée.\n" + \
+              "nous puissions remarquer que la page a du sens et est bien architecturée.\n" + \
               "Il n'est pas grave de sauter des niveaux de Hn : exemple passer de H3 à H6.\n" + \
-              "Il est possible de mettre plusieurs balises H1 dans une page mais en général nous préférons n'en garder qu'une."
+              "Il est possible de mettre plusieurs balises H1 dans une page mais en général, nous préférons n'en garder qu'une."
     p.font.italic = True
 
   def get_textual_content(soup):

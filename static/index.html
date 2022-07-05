@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>SEO</title>
     <script>
         function getFile() {
             url = document.getElementById("inputUrl").value;
@@ -12,14 +12,32 @@
             fetch("/", {method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({url: url})})
                 .then((response) => response.blob())
                 .then( value => {
-                    var file = window.URL.createObjectURL(value);
-                    window.location.assign(file);
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(value);
+                    link.download = "seo_report.pptx";
+                    link.click();
                 });
         }
     </script>
+    <style>
+        label {
+            display: block;
+        }
+        
+        input,
+        label {
+            font: 1rem 'Fira Sans', sans-serif;
+            margin: .4rem 0;
+        }
+        
+        input {
+            size: 100px;
+        }
+    </style>
 </head>
 <body>
-    <input id="inputUrl" type="text" id="input">
+    <label for="inputUrl">URL of the page to analyse</label>
+    <input type="text" id="inputUrl" size="50">
     <button onclick="getFile()">OK</button>
 </body>
 </html>

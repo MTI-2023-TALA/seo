@@ -1,9 +1,18 @@
-# seo
+# SEO
+
 Projet SEO
 
-# Installation
+# Use
 
+Run
+
+```sh
+sh build.sh
+
+# OR
+
+chmod +x build.sh
+./build.sh
 ```
-docker build -t seo .
-docker run --rm -p 5000:5000 --name seo seo
-```
+
+in a terminal to launch everything you need to access the app
