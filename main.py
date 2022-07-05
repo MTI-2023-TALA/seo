@@ -99,6 +99,12 @@ def get_title(soup):
     p.text = "Le titre est légèrement trop court, pensez à le rallonger un petit peu pour atteindre 10 à 12 mots."
   else:
     p.text = "Votre titre a une bon nombre de mots, c'est bien !"
+  
+  p = tf.add_paragraph() 
+  p.text = "CONSEIL: Un bon titre contient entre 10 et 12 mots et ne dépasse pas 70 caractères !\n" + \
+           "CONSEIL: Proposez un titre différent et cohérent pour chacunes de vos pages.\n" + \
+           "CONSEIL: Evitez de répeter deux fois un même mot dans votre titre."
+  p.font.italic = True
 
 
 def get_meta_description(soup):
@@ -137,6 +143,11 @@ def get_meta_description(soup):
 
     p = tf.add_paragraph()
     p.text = "Il est important d'en renseigner une afin que votre site soit bien référencé!\nPensez à y mettre une phrase accrocheuse et ne séparez pas les mots par des virgules."
+  
+  p = tf.add_paragraph() 
+  p.text = "CONSEIL: Pensez à placer les mots clés importants dans les 150 premiers caractères de votre description afin d'être mieux référencé.\n" + \
+           "CONSEIL: Pensez à ajouter une méta-description différente sur chacune de vos pages et qu'elle soit assez longue."
+  p.font.italic = True
 
 
 def get_meta_keywords(soup):
@@ -200,14 +211,17 @@ def get_url(soup):
       p.font.bold = True
       p.text = "Votre URL ne contient ni underscore ni caractères accentués ! C'est très bien.\n"
 
-    p = tf.add_paragraph()
-    p.font.italic = True
-    p.text = "TIPS: Il faut qu'à la lecture de l'URL nous puissions comprendre ce que le contenu de la page va être!\nTIPS: Evitez les \"?\" et \"&\" dans l'URL."
   else:
     p = tf.add_paragraph()
     p.text = "Aucune URL n'a été trouvée.\n"
     p.font.bold = True
-
+  
+  p = tf.add_paragraph() 
+  p.text = "CONSEIL: Il faut qu'à la lecture de l'URL nous puissions comprendre ce que le contenu de la page va être!\n" + \
+            "CONSEIL: Evitez les \"?\" et \"&\" dans l'URL.\n" + \
+            "CONSEIL: Si vous devez séparer des mots, utilisez le tiret du haut \"-\".\n" + \
+            "CONSEIL: N'utilisez pas de mots accentués dans l'URL."
+  p.font.italic = True
 
 def get_structure(soup):
   slide=prs.slides.add_slide(lyt)
@@ -241,7 +255,22 @@ def get_structure(soup):
     p = tf.add_paragraph()
     p.text = h.nb_spaces() + "[" + h.name + "] " + h.text
     count += 1
+  
+  slide=prs.slides.add_slide(lyt)
+  txBox = slide.shapes.add_textbox(left, top, width, height)
+  tf = txBox.text_frame
+  tf.auto_size = MSO_AUTO_SIZE.NONE
+  tf.word_wrap = True
 
+  p = tf.add_paragraph()
+  p.text = "Conseils sur la structure Hn"
+  p.font.bold = True
+  p = tf.add_paragraph() 
+  p.text = "La structure affichée représente l'arborescence de votre page, il est nécessaire qu'à la lecture de celle-ci " + \
+            "nous puissons remarquer que la page a du sens et est bien architecturée.\n" + \
+            "Il n'est pas grave de sauter des niveaux de Hn : exemple passer de H3 à H6.\n" + \
+            "Il est possible de mettre plusieurs balises H1 dans une page mais en général nous préférons n'en garder qu'une."
+  p.font.italic = True
 
 def get_textual_content(soup):
   slide=prs.slides.add_slide(lyt)
@@ -327,6 +356,13 @@ def get_other_content(soup):
   outbound_links_text = len(outbound_links)
   p = tf.add_paragraph()
   p.text = "Il y a " + str(outbound_links_text) + " liens sortants dans la page."
+
+  p = tf.add_paragraph() 
+  p.text = "CONSEIL: La balise méta Robots indique aux moteurs de recherche ce qu'ils doivent faire dans la page\n" + \
+            "Détails ici -> http://robots-txt.com/meta-robots/" + \
+            "CONSEIL: La balise Canonical permet d'éviter que si plusieurs pages ont le même contenu sur votre site web que cette page soit"  + \
+            "explorée en priorité et que les pages \"doubles\" soient explorées moins souvent."
+  p.font.italic = True
 
 add_begin_page_ppt()
 get_title(soup)
