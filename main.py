@@ -2,7 +2,7 @@ from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.enum.text import MSO_AUTO_SIZE
 from bs4 import BeautifulSoup as bs
-from flask import Flask, send_file
+from flask import Flask, send_file, request, jsonify
 import requests
 import re
 import validators
@@ -37,10 +37,12 @@ class Heading:
   def __str__(self):
     return self.name + ": " + self.text
 
-@app.route('/:url', methods=['GET'])
-def hello_world(url):
+@app.route('/', methods=['POST'])
+def hello_world():
+  url = request.json['url']
   valid = validators.url(url)
   if not valid:
+    print('toto?')
     raise Exception("Please provide a valid URL to analyze!")
 
   response = requests.get(url)
@@ -361,13 +363,13 @@ def hello_world(url):
               "explorée en priorité et que les pages \"doubles\" soient explorées moins souvent."
     p.font.italic = True
 
-    add_begin_page_ppt()
-    get_title(soup)
-    get_meta_description(soup)
-    get_meta_keywords(soup)
-    get_url(soup)
-    get_structure(soup)
-    get_textual_content(soup)
-    get_other_content(soup)
-    prs.save("seo_result.pptx")
-    send_file("seo_result.pptx")
+  add_begin_page_ppt()
+  get_title(soup)
+  get_meta_description(soup)
+  get_meta_keywords(soup)
+  get_url(soup)
+  get_structure(soup)
+  get_textual_content(soup)
+  get_other_content(soup)
+  prs.save("seo_result.pptx")
+  return send_file("seo_result.pptx")
