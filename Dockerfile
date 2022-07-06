@@ -1,9 +1,9 @@
-FROM python:3.8.10-slim-buster
+FROM python:3.8.13-alpine3.16
 
 WORKDIR /app
 ENV FLASK_APP main
 
-COPY ["static", "main.py", "requirements.txt", "./"]
+COPY . .
 
 RUN pip3 install -r requirements.txt
 
