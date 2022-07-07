@@ -1,3 +1,4 @@
+from email.mime import base
 from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.enum.text import MSO_AUTO_SIZE
@@ -6,6 +7,7 @@ from flask import Flask, send_file, request, jsonify
 import requests
 import re
 import validators
+import json
 
 app = Flask(__name__)
 
@@ -37,17 +39,24 @@ class Heading:
   def __str__(self):
     return self.name + ": " + self.text
 
+class Log:
+  def __init__(self, ip, state, http_verb, url, return_code):
+    self.ip = ip
+    self.state = state
+    self.http_verb = http_verb
+    self.url = url
+    self.return_code = return_code
+
 @app.route('/', methods=['GET'])
 def index():
   return send_file('static/index.html')
 
 
 @app.route('/', methods=['POST'])
-def hello_world():
+def analyze_website():
   url = request.json['url']
   valid = validators.url(url)
   if not valid:
-    print('toto?')
     raise Exception("Please provide a valid URL to analyze!")
 
   response = requests.get(url)
@@ -61,11 +70,17 @@ def hello_world():
   width = Inches(10)
   height = Inches(7)
 
+  def get_base_url(url):
+    url_split = url.split('/')
+    return url_split[0] + "//" + url_split[2]
 
   def add_begin_page_ppt():
     slide=prs.slides.add_slide(lyt)
     txBox = slide.shapes.add_textbox(left, top, width, height)
+
     tf = txBox.text_frame
+    tf.auto_size = MSO_AUTO_SIZE.NONE
+    tf.word_wrap = True
 
     p = tf.add_paragraph()
     p.text = "SEO Report" 
@@ -101,9 +116,13 @@ def hello_world():
       p.text = "Le titre est trop court, pensez à le rallonger pour atteindre 10 à 12 mots."
     elif title_words < 10:
       p.text = "Le titre est légèrement trop court, pensez à le rallonger un petit peu pour atteindre 10 à 12 mots."
+    elif title_words > 12:
+      p.text = "Le titre est trop long, il ne faut pas dépasser 12 mots."
+    elif title_length > 70:
+      p.text = "Le titre est trop long, il ne faut pas dépasser 70 caractères."
     else:
       p.text = "Votre titre a une bon nombre de mots, c'est bien !"
-    
+
     p = tf.add_paragraph() 
     p.text = "CONSEIL: Un bon titre contient entre 10 et 12 mots et ne dépasse pas 70 caractères !\n" + \
             "CONSEIL: Proposez un titre différent et cohérent pour chacunes de vos pages.\n" + \
@@ -283,11 +302,10 @@ def hello_world():
     tf.auto_size = MSO_AUTO_SIZE.NONE
     tf.word_wrap = True
 
+    text = soup.get_text()
     d = {}
-    decoded_html = html.decode("utf-8")
-    decoded_html_split = re.split('\\s+', decoded_html)
-
-    for word in decoded_html_split:
+    all_content_split = re.split('\\s+', text)
+    for word in all_content_split:
       if word in d:
         d[word] += 1
       else:
@@ -296,7 +314,7 @@ def hello_world():
     sorted_most_used_words = []
     for k, v in sorted(d.items(), key=lambda kv: kv[1], reverse=True):
       sorted_most_used_words.append("%s ➡ %s occurences" % (k,v))
-    most_used_words = sorted_most_used_words[:10]
+    most_used_words = sorted_most_used_words[:18]
 
     p = tf.add_paragraph()
     p.text = "Mots clés les plus utilisés :\n"
@@ -305,7 +323,6 @@ def hello_world():
     for word in most_used_words:
       p = tf.add_paragraph()
       p.text = word
-
 
   def get_other_content(soup):
     slide=prs.slides.add_slide(lyt)
@@ -356,10 +373,23 @@ def hello_world():
     p = tf.add_paragraph()
     p.text = "Il y a " + str(nb_images_no_alt_text) + " images avec un attribut ALT vide ou non présent."
 
-    outbound_links = [[a.get_text(), a["href"]] for a in soup.find_all('a', href=True)]
+    outbound_links = soup.find_all('a', href=True)
     outbound_links_text = len(outbound_links)
     p = tf.add_paragraph()
     p.text = "Il y a " + str(outbound_links_text) + " liens sortants dans la page."
+
+    baseurl = get_base_url(url)
+    count_internal = 0
+    count_external = 0
+    for link in outbound_links: 
+      if link['href'].startswith(baseurl) or link['href'].startswith('/') or link['href'].startswith('#'):
+        count_internal += 1
+      else:
+        count_external += 1
+    p = tf.add_paragraph()
+    p.text = "Il y a " + str(count_internal) + " liens sortants internes."
+    p = tf.add_paragraph()
+    p.text = "Il y a " + str(count_external) + " liens sortants externes."
 
     p = tf.add_paragraph() 
     p.text = "CONSEIL: La balise méta Robots indique aux moteurs de recherche ce qu'ils doivent faire dans la page\n" + \
@@ -378,3 +408,167 @@ def hello_world():
   get_other_content(soup)
   prs.save("seo_result.pptx")
   return send_file("seo_result.pptx")
+
+@app.route('/logs', methods=['POST'])
+def analyze_server_logs():
+  log_file_content = request.json['file_content']
+  prs=Presentation()
+  lyt=prs.slide_layouts[6]
+  left = 0
+  top = 1
+  width = Inches(10)
+  height = Inches(7)
+
+  slide=prs.slides.add_slide(lyt)
+  txBox = slide.shapes.add_textbox(left, top, width, height)
+  tf = txBox.text_frame
+  tf.auto_size = MSO_AUTO_SIZE.NONE
+  tf.word_wrap = True
+  p = tf.add_paragraph()
+  p.text = "SEO Report Logs Analysis" 
+  p.font.size = Pt(30)
+  p.font.bold = True
+
+  def get_logs():
+    data = log_file_content
+    lines = data.split('\n')
+    logs = []
+    for current_line in lines:
+      items = current_line.split(' ')
+      logs.append(Log(items[0], items[1], items[5].replace('"', ''), items[6], items[8]))
+    return logs
+
+  def get_top_ips(logs):
+    dict_ips = {}
+    dict_state = {}
+    dict_http_verbs = {}
+    dict_url = {}
+    dict_return_codes = {}
+
+    for log in logs:
+
+      # ips check
+      if log.ip in dict_ips:
+        dict_ips[log.ip] += 1
+      else:
+        dict_ips[log.ip] = 1
+
+      # state check
+      if log.state in dict_state:
+        dict_state[log.state] += 1
+      else:
+        dict_state[log.state] = 1
+      
+      # http verb check
+      if log.http_verb in dict_http_verbs:
+        dict_http_verbs[log.http_verb] += 1
+      else:
+        dict_http_verbs[log.http_verb] = 1
+
+      # url check
+      if log.url in dict_url:
+        dict_url[log.url] += 1
+      else:
+        dict_url[log.url] = 1
+      
+      # return code check
+      if log.return_code in dict_return_codes:
+        dict_return_codes[log.return_code] += 1
+      else:
+        dict_return_codes[log.return_code] = 1
+
+    list_ips_most_used = []
+    list_state_most_used = []
+    list_http_verbs_most_used = []
+    list_url_most_used = []
+    list_return_codes_most_used = []
+    for k, v in sorted(dict_ips.items(), key=lambda kv: kv[1], reverse=True):
+      list_ips_most_used.append("%s ➡  %s occurences" % (k,v))
+    for k, v in sorted(dict_state.items(), key=lambda kv: kv[1], reverse=True):
+      list_state_most_used.append("%s ➡  %s occurences" % (k,v))
+    for k, v in sorted(dict_http_verbs.items(), key=lambda kv: kv[1], reverse=True):
+      list_http_verbs_most_used.append("%s ➡  %s occurences" % (k,v))
+    for k, v in sorted(dict_url.items(), key=lambda kv: kv[1], reverse=True):
+      list_url_most_used.append("%s ➡  %s occurences" % (k,v))
+    for k, v in sorted(dict_return_codes.items(), key=lambda kv: kv[1], reverse=True):
+      list_return_codes_most_used.append("%s ➡  %s occurences" % (k,v))
+
+    slide=prs.slides.add_slide(lyt)
+    txBox = slide.shapes.add_textbox(left, top, width, height)
+    tf = txBox.text_frame
+    tf.auto_size = MSO_AUTO_SIZE.NONE
+    tf.word_wrap = True
+
+    # ips
+    p = tf.add_paragraph()
+    p.text = "Most called IPS" 
+    p.font.size = Pt(30)
+    p.font.bold = True
+    for ip in list_ips_most_used[:10]:
+      p = tf.add_paragraph() 
+      p.text = ip
+    
+    slide=prs.slides.add_slide(lyt)
+    txBox = slide.shapes.add_textbox(left, top, width, height)
+    tf = txBox.text_frame
+    tf.auto_size = MSO_AUTO_SIZE.NONE
+    tf.word_wrap = True
+
+    # state
+    p = tf.add_paragraph()
+    p.text = "Most common countries servers" 
+    p.font.size = Pt(30)
+    p.font.bold = True
+    for state in list_state_most_used[:10]:
+      p = tf.add_paragraph() 
+      p.text = state
+
+    slide=prs.slides.add_slide(lyt)
+    txBox = slide.shapes.add_textbox(left, top, width, height)
+    tf = txBox.text_frame
+    tf.auto_size = MSO_AUTO_SIZE.NONE
+    tf.word_wrap = True
+
+    # http verb
+    p = tf.add_paragraph()
+    p.text = "Most common http verbs" 
+    p.font.size = Pt(30)
+    p.font.bold = True
+    for verb in list_http_verbs_most_used[:10]:
+      p = tf.add_paragraph()
+      p.text = verb
+
+    slide=prs.slides.add_slide(lyt)
+    txBox = slide.shapes.add_textbox(left, top, width, height)
+    tf = txBox.text_frame
+    tf.auto_size = MSO_AUTO_SIZE.NONE
+    tf.word_wrap = True
+
+    # url
+    p = tf.add_paragraph()
+    p.text = "Most called command urls" 
+    p.font.size = Pt(30)
+    p.font.bold = True
+    for url in list_url_most_used[:10]:
+      p = tf.add_paragraph()
+      p.text = url
+  
+    slide=prs.slides.add_slide(lyt)
+    txBox = slide.shapes.add_textbox(left, top, width, height)
+    tf = txBox.text_frame
+    tf.auto_size = MSO_AUTO_SIZE.NONE
+    tf.word_wrap = True
+
+    # return code
+    p = tf.add_paragraph()
+    p.text = "Most common return codes" 
+    p.font.size = Pt(30)
+    p.font.bold = True
+    for code in list_return_codes_most_used[:10]:
+      p = tf.add_paragraph()
+      p.text = code
+
+  logs = get_logs()
+  get_top_ips(logs)
+  prs.save("seo_logs_result.pptx")
+  return send_file("seo_logs_result.pptx")

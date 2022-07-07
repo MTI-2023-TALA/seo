@@ -16,3 +16,7 @@ chmod +x build.sh
 ```
 
 in a terminal to launch everything you need to access the app
+
+## Examples
+To test logs you have a log file in /resources folder
+To test a website, you can use one in /resources

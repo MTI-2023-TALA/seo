@@ -5,16 +5,34 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SEO</title>
+    <script src="http://cdn.jsdelivr.net/g/filesaver.js"></script>
     <script>
         function getFile() {
             url = document.getElementById("inputUrl").value;
-            console.log(url);
             fetch("/", {method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({url: url})})
                 .then((response) => response.blob())
                 .then( value => {
                     const link = document.createElement('a');
                     link.href = URL.createObjectURL(value);
                     link.download = "seo_report.pptx";
+                    link.click();
+                });
+        }
+
+        function onFileLoad(elementId, event) {
+            document.getElementById(elementId).innerText = event.target.result;
+        }
+
+        async function readText(event) {
+            const file = event.target.files.item(0)
+            const text = await file.text();
+
+            fetch("/logs", {method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({file_content: text})})
+                .then((response) => response.blob())
+                .then( value => {
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(value);
+                    link.download = "seo_logs_result.pptx";
                     link.click();
                 });
         }
@@ -39,5 +57,9 @@
     <label for="inputUrl">URL of the page to analyse</label>
     <input type="text" id="inputUrl" size="50">
     <button onclick="getFile()">OK</button>
+    <br>
+    <label for="LogFile">Add a file below to start analysing logs!</label>
+    <label for="LogFile2">REMINDER: It'll only work with Apache2 server logs.</label>
+    <input type="file" onchange="readText(event)" />
 </body>
 </html>
